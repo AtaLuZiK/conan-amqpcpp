@@ -27,6 +27,10 @@ class AmqpcppConan(ConanFile):
             del self.options.shared
             del self.options.with_internal_tcp_module
 
+    def requirements(self):
+        if self.settings.os == "Linux" and self.options.with_internal_tcp_module:
+            self.requires("OpenSSL/1.1.1@conan/stable")
+
     def source(self):
         zip_name = "v%s.tar.gz" % self.version
         tools.download("https://github.com/CopernicaMarketingSoftware/AMQP-CPP/archive/%s" % zip_name, zip_name)
@@ -49,7 +53,10 @@ conan_basic_setup()''')
         cmake.build()
 
     def package(self):
-        self.copy("*.h", dst="include", src=os.path.join(self.zip_folder_name, "include"))
+        exclude_headers = None
+        if self.settings.os != "Linux" or not self.options.with_internal_tcp_module:
+            exclude_headers = "amqpcpp/linux_tcp/*"
+        self.copy("*.h", dst="include", src=os.path.join(self.zip_folder_name, "include"), excludes=exclude_headers)
         self.copy("*.lib", dst="lib", keep_path=False)
         self.copy("*.dll", dst="bin", keep_path=False)
         self.copy("*.so", dst="lib", keep_path=False)
